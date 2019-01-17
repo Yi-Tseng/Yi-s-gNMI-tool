@@ -9,5 +9,6 @@ Build the Docker image
 `docker build -t gnmi-tool .`
 
 Usage:
-./run-cli [options]
+
+`./run-cli [options]`
 
