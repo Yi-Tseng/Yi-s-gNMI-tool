@@ -20,7 +20,7 @@ def str2bool(v):
 parser = argparse.ArgumentParser(description='Test gNMI subscription')
 parser.add_argument('--grpc-addr', help='gNMI server address',
                     type=str, action="store", default='localhost:28000')
-parser.add_argument('cmd', help='gNMI command', type=str, choices=['get', 'set', 'sub'])
+parser.add_argument('cmd', help='gNMI command', type=str, choices=['get', 'set', 'sub', 'sub-poll'])
 parser.add_argument('path', help='gNMI Path', type=str)
 
 # gNMI options for SetRequest
@@ -34,6 +34,8 @@ parser.add_argument('--string-val', help='[SetRequest only] Set string value',
                     type=str, action="store", required=False)
 parser.add_argument('--float-val', help='[SetRequest only] Set float value',
                     type=float, action="store", required=False)
+parser.add_argument('--poll-interval', help='[Sample subcribe only] Sample subscribe poll interval in ms',
+                    type=int, action="store", required=False)
 
 args = parser.parse_args()
 
@@ -110,6 +112,19 @@ def build_gnmi_sub():
     build_path(args.path, path)
     return req
 
+def build_gnmi_sub_poll():
+    req = gnmi_pb2.SubscribeRequest()
+    subList = req.subscribe
+    subList.mode = gnmi_pb2.SubscriptionList.STREAM
+    subList.updates_only = True
+    sub = subList.subscription.add()
+    sub.mode = gnmi_pb2.SAMPLE
+    sub.sample_interval = args.poll_interval
+    path = sub.path
+    build_path(args.path, path)
+    return req
+
+
 def req_iterator():
     while True:
         req = stream_out_q.get()
@@ -153,6 +168,21 @@ def main():
         except KeyboardInterrupt:
             stream_out_q.put(None)
             stream_recv_thread.join()
+    elif args.cmd == 'sub-poll':
+        req = build_gnmi_sub_poll()
+        stream_out_q.put(req)
+        stream = stub.Subscribe(req_iterator())
+        stream_recv_thread = threading.Thread(
+            target=stream_recv, args=(stream,))
+        stream_recv_thread.start()
+
+        try:
+            while True:
+                sleep(1)
+        except KeyboardInterrupt:
+            stream_out_q.put(None)
+            stream_recv_thread.join()
+
     else:
         print('Unknown command %s', args.cmd)
         return
