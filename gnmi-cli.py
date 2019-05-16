@@ -74,6 +74,9 @@ def build_gnmi_get_req():
     req.encoding = gnmi_pb2.PROTO
     path = req.path.add()
     build_path(args.path, path)
+    if args.path == '/':
+        # Special case
+        req.type = gnmi_pb2.GetRequest.CONFIG
     return req
 
 def build_gnmi_set_req():
