@@ -20,7 +20,7 @@ def str2bool(v):
 parser = argparse.ArgumentParser(description='Test gNMI subscription')
 parser.add_argument('--grpc-addr', help='gNMI server address',
                     type=str, action="store", default='localhost:28000')
-parser.add_argument('cmd', help='gNMI command', type=str, choices=['get', 'set', 'sub', 'sub-poll'])
+parser.add_argument('cmd', help='gNMI command', type=str, choices=['get', 'set', 'sub', 'sub-poll', 'cap'])
 parser.add_argument('path', help='gNMI Path', type=str)
 
 # gNMI options for SetRequest
@@ -186,6 +186,11 @@ def main():
             stream_out_q.put(None)
             stream_recv_thread.join()
 
+    elif args.cmd == 'cap':
+        req = gnmi_pb2.CapabilityRequest()
+        print_msg(req, "REQUEST")
+        resp = stub.Capabilities(req)
+        print_msg(resp, "RESPONSE")
     else:
         print('Unknown command %s', args.cmd)
         return
