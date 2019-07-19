@@ -20,7 +20,7 @@ def str2bool(v):
 parser = argparse.ArgumentParser(description='Test gNMI subscription')
 parser.add_argument('--grpc-addr', help='gNMI server address',
                     type=str, action="store", default='localhost:28000')
-parser.add_argument('cmd', help='gNMI command', type=str, choices=['get', 'set', 'sub', 'sub-poll', 'cap'])
+parser.add_argument('cmd', help='gNMI command', type=str, choices=['get', 'set', 'sub', 'sub-poll', 'cap', 'del'])
 parser.add_argument('path', help='gNMI Path', type=str)
 
 # gNMI options for SetRequest
@@ -99,6 +99,12 @@ def build_gnmi_set_req():
         return None
     return req
 
+def build_gnmi_del_req():
+    req = gnmi_pb2.SetRequest()
+    delete = req.delete.add()
+    build_path(args.path, delete)
+    return req
+
 # for subscrption
 stream_out_q = Queue()
 stream_in_q = Queue()
@@ -154,6 +160,11 @@ def main():
         print_msg(resp, "RESPONSE")
     elif args.cmd == 'set':
         req = build_gnmi_set_req()
+        print_msg(req, "REQUEST")
+        resp = stub.Set(req)
+        print_msg(resp, "RESPONSE")
+    elif args.cmd == 'del':
+        req = build_gnmi_del_req()
         print_msg(req, "REQUEST")
         resp = stub.Set(req)
         print_msg(resp, "RESPONSE")
