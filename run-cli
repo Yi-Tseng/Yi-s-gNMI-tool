@@ -1,4 +1,4 @@
 #!/bin/bash
 
-docker run --rm --network host -it gnmi-tool /gnmi-cli $@
+docker run --rm -v `pwd`:/gnmi-cli-data --network host -it gnmi-tool /gnmi-cli $@
 

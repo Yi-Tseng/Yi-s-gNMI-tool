@@ -34,6 +34,12 @@ parser.add_argument('--string-val', help='[SetRequest only] Set string value',
                     type=str, action="store", required=False)
 parser.add_argument('--float-val', help='[SetRequest only] Set float value',
                     type=float, action="store", required=False)
+parser.add_argument('--file-bytes-val', help='[SetRequest only] Set bytes value based on a file',
+                    type=str, action="store", required=False)
+
+parser.add_argument('--replace', help='[SetRequest only] use replace instead of update',
+                    action="store_true", required=False)
+
 parser.add_argument('--poll-interval', help='[Sample subcribe only] Sample subscribe poll interval in ms',
                     type=int, action="store", required=False)
 
@@ -79,11 +85,19 @@ def build_gnmi_get_req():
         req.type = gnmi_pb2.GetRequest.CONFIG
     return req
 
+def read_file(file_name):
+    with open(file_name, 'rb') as f:
+        return f.read()
+
 def build_gnmi_set_req():
     req = gnmi_pb2.SetRequest()
-    update = req.update.add()
+    if (args.replace):
+        update = req.replace.add()
+    else:
+        update = req.update.add()
     path = update.path
-    build_path(args.path, path)
+    if (args.path != '/'):
+        build_path(args.path, path)
     if (args.bool_val is not None):
         update.val.bool_val = args.bool_val
     elif (args.int_val is not None):
@@ -94,6 +108,8 @@ def build_gnmi_set_req():
         update.val.string_val = args.string_val
     elif (args.float_val is not None):
         update.val.float_val = args.float_val
+    elif (args.file_bytes_val is not None):
+        update.val.bytes_val = read_file(args.file_bytes_val)
     else:
         print("No typed value set")
         return None
