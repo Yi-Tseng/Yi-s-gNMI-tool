@@ -20,7 +20,7 @@ def str2bool(v):
 parser = argparse.ArgumentParser(description='Test gNMI subscription')
 parser.add_argument('--grpc-addr', help='gNMI server address',
                     type=str, action="store", default='localhost:28000')
-parser.add_argument('cmd', help='gNMI command', type=str, choices=['get', 'set', 'sub', 'sub-poll', 'cap', 'del'])
+parser.add_argument('cmd', help='gNMI command', type=str, choices=['get', 'set', 'sub-onchange', 'sub-sample', 'cap', 'del'])
 parser.add_argument('path', help='gNMI Path', type=str)
 
 # gNMI options for SetRequest
@@ -34,8 +34,8 @@ parser.add_argument('--string-val', help='[SetRequest only] Set string value',
                     type=str, action="store", required=False)
 parser.add_argument('--float-val', help='[SetRequest only] Set float value',
                     type=float, action="store", required=False)
-parser.add_argument('--poll-interval', help='[Sample subcribe only] Sample subscribe poll interval in ms',
-                    type=int, action="store", required=False)
+parser.add_argument('--interval', help='[Sample subcribe only] Sample subscribe poll interval in ms',
+                    type=int, action="store", default=5000)
 
 args = parser.parse_args()
 
@@ -110,7 +110,7 @@ stream_out_q = Queue()
 stream_in_q = Queue()
 stream = None
 
-def build_gnmi_sub():
+def build_gnmi_sub_onchange():
     req = gnmi_pb2.SubscribeRequest()
     subList = req.subscribe
     subList.mode = gnmi_pb2.SubscriptionList.STREAM
@@ -121,14 +121,14 @@ def build_gnmi_sub():
     build_path(args.path, path)
     return req
 
-def build_gnmi_sub_poll():
+def build_gnmi_sub_sample():
     req = gnmi_pb2.SubscribeRequest()
     subList = req.subscribe
     subList.mode = gnmi_pb2.SubscriptionList.STREAM
     subList.updates_only = True
     sub = subList.subscription.add()
     sub.mode = gnmi_pb2.SAMPLE
-    sub.sample_interval = args.poll_interval
+    sub.sample_interval = args.interval
     path = sub.path
     build_path(args.path, path)
     return req
@@ -168,8 +168,8 @@ def main():
         print_msg(req, "REQUEST")
         resp = stub.Set(req)
         print_msg(resp, "RESPONSE")
-    elif args.cmd == 'sub':
-        req = build_gnmi_sub()
+    elif args.cmd == 'sub-onchange':
+        req = build_gnmi_sub_onchange()
         stream_out_q.put(req)
         stream = stub.Subscribe(req_iterator())
         stream_recv_thread = threading.Thread(
@@ -182,8 +182,8 @@ def main():
         except KeyboardInterrupt:
             stream_out_q.put(None)
             stream_recv_thread.join()
-    elif args.cmd == 'sub-poll':
-        req = build_gnmi_sub_poll()
+    elif args.cmd == 'sub-sample':
+        req = build_gnmi_sub_sample()
         stream_out_q.put(req)
         stream = stub.Subscribe(req_iterator())
         stream_recv_thread = threading.Thread(
