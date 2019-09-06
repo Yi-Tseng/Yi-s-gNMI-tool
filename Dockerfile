@@ -30,7 +30,7 @@ RUN mv /gnmi/proto/target $PYTHONPATH/ && \
 FROM python:alpine3.8
 
 RUN apk update
-RUN apk add bash libstdc++
+RUN apk add --no-cache bash libstdc++
 
 COPY --from=builder /install /usr/local
 COPY gnmi-cli.py /usr/local/bin/gnmi-cli

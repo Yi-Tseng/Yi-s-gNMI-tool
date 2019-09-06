@@ -47,8 +47,7 @@ def parse_key_val(key_val_str):
 # parse path_str string and add elements to path (gNMI Path class)
 def build_path(path_str, path):
     if path_str == '/':
-        pe = path.elem.add()
-        pe.name = '/'
+        # the root path should be an empty path
         return
 
     path_elem_info_list = re.findall(r'/([^/\[]+)(\[([^=]+=[^\]]+)\])?', path_str)
